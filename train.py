@@ -1,11 +1,9 @@
 import gc
-
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-# 引入 AMP 相关的库
 from torch.cuda.amp import autocast, GradScaler
 import os
 from tqdm import tqdm
@@ -20,12 +18,12 @@ from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 
 # --- 配置参数 ---
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-BATCH_SIZE = 2  # 引入 AMP 后，显存占用降低，你可以尝试将 BATCH_SIZE 调大到 2 或 4
+BATCH_SIZE = 2
 EPOCHS = 2000
 LR = 2e-4*BATCH_SIZE
 MIN_LR = 1e-7
 WEIGHT_DECAY = 1e-4
-TRAIN_DATA_PATH = 'ntire'
+TRAIN_DATA_PATH = 'data'
 SEED = 3407
 
 
@@ -166,19 +164,9 @@ def train():
 
             # 2. 启用 autocast 上下文管理器 (仅包裹前向传播和 loss 计算)
             with torch.amp.autocast('cuda', enabled=torch.cuda.is_available()):
-                # if random.random() < 0.5:
-                #     hazy_in, clear_target = mixup_data(hazy, clear)
-                #     output = model(hazy_in)
-                #     loss = criterion(output, clear_target)
-                # else:
-                # if random.random() < 0.2 and model.training:
-                #     output = model(clear)
-                #     loss_identity = criterion(output, clear)
-                # else:
-                #     loss_identity = 0.0
 
                 output = model(hazy)
-                loss = criterion(output, clear)# + loss_identity*0.6
+                loss = criterion(output, clear)
 
             # 3. 使用 Scaler 放大 loss 并反向传播
             scaler.scale(loss).backward()
