@@ -7,7 +7,7 @@ from PIL import Image
 from model import TripleSpaceDehazeNet
 
 DEVICE     = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-MODEL_PATH = 'weight/model_latest.pth'
+MODEL_PATH = 'weights/model_latest.pth'
 INPUT_DIR  = 'data/test'
 OUTPUT_DIR = './output_submission'
 
