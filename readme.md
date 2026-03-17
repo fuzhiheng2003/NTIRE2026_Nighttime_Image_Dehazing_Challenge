@@ -21,7 +21,7 @@ Pretrained weights
 ------------------
 Place the trained checkpoint here:
 ```
-checkpoints/model_latest.pth
+weights/model_latest.pth
 ```
 
 Environment
