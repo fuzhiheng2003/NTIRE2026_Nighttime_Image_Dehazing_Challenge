@@ -1,5 +1,5 @@
 # TripleSpaceDehazeNet
-#  TeamName: JNU620
+#  TeamName: JNU-620
 
 Overview
 --------
