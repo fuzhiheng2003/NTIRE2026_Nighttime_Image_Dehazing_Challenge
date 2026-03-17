@@ -15,7 +15,6 @@ def seed_everything(seed=3407):
 
 
 def rgb_to_ycbcr(image: torch.Tensor) -> torch.Tensor:
-    r"""Differentiable RGB to YCbCr conversion."""
     if not torch.is_tensor(image):
         raise TypeError("Input type is not a torch.Tensor. Got {}".format(type(image)))
 

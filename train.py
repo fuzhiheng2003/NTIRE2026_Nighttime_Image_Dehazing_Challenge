@@ -16,18 +16,15 @@ from model import TripleSpaceDehazeNet
 from loss import TripleLoss
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 
-# --- 配置参数 ---
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 BATCH_SIZE = 2
 EPOCHS = 2000
 LR = 2e-4*BATCH_SIZE
 MIN_LR = 1e-7
 WEIGHT_DECAY = 1e-4
-TRAIN_DATA_PATH = 'data'
+TRAIN_DATA_PATH = 'data/train'
 SEED = 3407
 
-
-# --- 1. 严格的随机种子固定函数 ---
 def seed_everything(seed=3407):
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
@@ -38,8 +35,6 @@ def seed_everything(seed=3407):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-
-# --- 2. DataLoader 的 Worker 初始化 ---
 def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2 ** 32
     np.random.seed(worker_seed)
@@ -100,14 +95,11 @@ def visualize_progress(model, epoch, device, save_dir='training_results'):
         img = cv2.resize(img, (new_w, new_h))
 
     img_tensor = torch.from_numpy(img).float().div(255.0).permute(2, 0, 1).unsqueeze(0).to(device)
-    # del hazy, clean, output
     torch.cuda.empty_cache()
     gc.collect()
     with torch.no_grad():
-        # 推理阶段也可以使用 AMP 加速
         with autocast():
             output = model(img_tensor)
-            # 确保转回 cpu 之前是 float32
             output = output.float()
     torch.cuda.empty_cache()
     gc.collect()
@@ -145,7 +137,6 @@ def train():
     optimizer = optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=250, T_mult=1, eta_min=MIN_LR)
 
-    # 1. 初始化 GradScaler，用于缩放 loss，防止 FP16 梯度下溢
     scaler = GradScaler(enabled=torch.cuda.is_available())
 
     print(f"Start training | Epochs: {EPOCHS} | Seed: {SEED}")
@@ -162,20 +153,16 @@ def train():
 
             optimizer.zero_grad()
 
-            # 2. 启用 autocast 上下文管理器 (仅包裹前向传播和 loss 计算)
             with torch.amp.autocast('cuda', enabled=torch.cuda.is_available()):
 
                 output = model(hazy)
                 loss = criterion(output, clear)
 
-            # 3. 使用 Scaler 放大 loss 并反向传播
             scaler.scale(loss).backward()
 
-            # 4. 梯度裁剪前，必须先 unscale 梯度，否则裁剪的数值范围是错误的
             scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 
-            # 5. Scaler 执行优化器 step() 并更新自身缩放因子
             scaler.step(optimizer)
             scaler.update()
 
@@ -191,7 +178,6 @@ def train():
 
         torch.save(ema.model.state_dict(), 'checkpoints/model_latest.pth')
 
-        # 6. 保存断点时，把 scaler 的状态也保存下来，以保证中断恢复后训练完全一致
         torch.save({
             'epoch': epoch,
             'model_state_dict': model.state_dict(),

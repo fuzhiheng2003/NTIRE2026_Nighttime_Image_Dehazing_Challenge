@@ -5,7 +5,6 @@ import torchvision.models as models
 from utils import rgb_to_ycbcr
 import torch.nn.functional as F
 class CharbonnierLoss(nn.Module):
-    # 【优化 1】：将 eps 从 1e-3 降低到 1e-6，使其在误差极小时依然能提供稳定的梯度，逼近纯粹的 L1 Loss
     def __init__(self, eps=1e-6):
         super(CharbonnierLoss, self).__init__()
         self.eps = eps
@@ -79,24 +78,7 @@ class ColorCosineLoss(nn.Module):
         return torch.mean(1.0 - cosine_sim)
 
 
-class EdgeLoss(nn.Module):
-    def __init__(self):
-        super(EdgeLoss, self).__init__()
 
-    def forward(self, pred, target):
-        # 计算水平方向的梯度 (边缘)
-        pred_dx = pred[:, :, :, 1:] - pred[:, :, :, :-1]
-        target_dx = target[:, :, :, 1:] - target[:, :, :, :-1]
-
-        # 计算垂直方向的梯度 (边缘)
-        pred_dy = pred[:, :, 1:, :] - pred[:, :, :-1, :]
-        target_dy = target[:, :, 1:, :] - target[:, :, :-1, :]
-
-        # 对边缘的差异计算 L1 Loss
-        loss_dx = F.l1_loss(pred_dx, target_dx)
-        loss_dy = F.l1_loss(pred_dy, target_dy)
-
-        return loss_dx + loss_dy
 
 # 3. 修改主 Loss 函数
 class TripleLoss(nn.Module):
@@ -105,34 +87,24 @@ class TripleLoss(nn.Module):
         self.charbonnier = CharbonnierLoss()
         self.fft_loss = FFTLoss(loss_weight=0.05)
         self.perceptual_loss = PerceptualLoss()
-        self.edge_loss = EdgeLoss()
         self.tv_loss = TVLoss(weight=1.0)
-        self.color_cosine = ColorCosineLoss()  # 实例化新增的色彩角度损失
+        self.color_cosine = ColorCosineLoss()
 
-        # 调整权重分布
-        self.w_pixel = 1.0  # 稍微提高像素级损失权重
+        self.w_pixel = 1.0
         self.w_fft = 0.1
         self.w_percep = 0.1
-        self.w_color = 0.5  # YCbCr 色彩损失
-        self.w_color_cos = 0.2  # RGB 角度相似度损失
-
-        # TV Loss 权重可以适度调高，因为现在它只惩罚残差(噪声)
+        self.w_color = 0.5
+        self.w_color_cos = 0.2
         self.w_tv = 0.01
 
     def forward(self, pred, target):
         loss_pixel = self.charbonnier(pred, target)
         loss_fft = self.fft_loss(pred, target)
         loss_percep = self.perceptual_loss(pred, target)
-        # loss_edge = self.edge_loss(pred, target)
         pred_ycbcr = rgb_to_ycbcr(pred)
         target_ycbcr = rgb_to_ycbcr(target)
         loss_color = self.charbonnier(pred_ycbcr, target_ycbcr)
-
-        # 计算颜色角度损失
         loss_color_cos = self.color_cosine(pred, target)
-
-        # 核心改动：将 TV Loss 作用于误差图 (pred - target)
-        # 这能极大程度抑制去雾产生的伪影和高频噪声，且不损伤真实纹理
         loss_tv = self.tv_loss(pred - target)
 
         total_loss = (self.w_pixel * loss_pixel) + \
@@ -140,6 +112,6 @@ class TripleLoss(nn.Module):
                      (self.w_percep * loss_percep) + \
                      (self.w_color * loss_color) + \
                      (self.w_color_cos * loss_color_cos) + \
-                     (self.w_tv * loss_tv) #+ (loss_edge*0.5)
+                     (self.w_tv * loss_tv)
 
         return total_loss
