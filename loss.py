@@ -75,10 +75,6 @@ class ColorCosineLoss(nn.Module):
         cosine_sim = torch.sum(pred_norm * target_norm, dim=1)
         return torch.mean(1.0 - cosine_sim)
 
-
-
-
-# 3. 修改主 Loss 函数
 class TripleLoss(nn.Module):
     def __init__(self):
         super(TripleLoss, self).__init__()
