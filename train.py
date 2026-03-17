@@ -1,7 +1,6 @@
 import gc
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.cuda.amp import autocast, GradScaler
@@ -55,7 +54,6 @@ class ModelEMA:
             emsd = self.model.state_dict()
             for name, param in msd.items():
                 if param.dtype in [torch.float16, torch.float32]:
-                    # EMA 权重始终保持在 float32 精度以确保稳定平滑
                     emsd[name].copy_(self.decay * emsd[name] + (1. - self.decay) * param)
 
 
@@ -75,7 +73,7 @@ def visualize_progress(model, epoch, device, save_dir='training_results'):
     model.eval()
     if not os.path.exists(save_dir): os.makedirs(save_dir)
 
-    test_img_path = 'ntire/test/31_NTHazy.png'
+    test_img_path = 'data/test/31_NTHazy.png'
     if not os.path.exists(test_img_path):
         possible_dir = os.path.join(TRAIN_DATA_PATH, 'hazy')
         if os.path.exists(possible_dir):

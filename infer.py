@@ -7,7 +7,7 @@ from PIL import Image
 from model import TripleSpaceDehazeNet
 
 DEVICE     = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-MODEL_PATH = 'checkpoints/model_latest.pth'
+MODEL_PATH = 'weight/model_latest.pth'
 INPUT_DIR  = 'data/test'
 OUTPUT_DIR = './output_submission'
 
@@ -120,17 +120,17 @@ def tta_tile_predict(
     # After rotation the image shape becomes (C, W, H); overlap_tile handles this adaptively.
     # ------------------------------------------------------------------
     transforms = [
-        # (forward_fn,                             inverse_fn)
-        (lambda t: t,                              lambda t: t),                              # 1. Original
-        (lambda t: TF.hflip(t),                   lambda t: TF.hflip(t)),                   # 2. Horizontal flip
-        (lambda t: TF.vflip(t),                   lambda t: TF.vflip(t)),                   # 3. Vertical flip
-        (lambda t: TF.vflip(TF.hflip(t)),         lambda t: TF.hflip(TF.vflip(t))),        # 4. Horizontal + vertical flip
-        (lambda t: torch.rot90(t, 1, [-2, -1]),   lambda t: torch.rot90(t, -1, [-2, -1])), # 5. Rotate 90° CCW
-        (lambda t: TF.hflip(torch.rot90(t, 1, [-2, -1])),                                   # 6. Rotate 90° CCW + horizontal flip
+        # (forward_fn, inverse_fn)
+        (lambda t: t, lambda t: t),                                                                   # 1. Original
+        (lambda t: TF.hflip(t), lambda t: TF.hflip(t)),                                               # 2. Horizontal flip
+        (lambda t: TF.vflip(t), lambda t: TF.vflip(t)),                                               # 3. Vertical flip
+        (lambda t: TF.vflip(TF.hflip(t)), lambda t: TF.hflip(TF.vflip(t))),                           # 4. Horizontal + vertical flip
+        (lambda t: torch.rot90(t, 1, [-2, -1]), lambda t: torch.rot90(t, -1, [-2, -1])), # 5. Rotate 90° CCW
+        (lambda t: TF.hflip(torch.rot90(t, 1, [-2, -1])),                                    # 6. Rotate 90° CCW + horizontal flip
          lambda t: torch.rot90(TF.hflip(t), -1, [-2, -1])),
-        (lambda t: TF.vflip(torch.rot90(t, 1, [-2, -1])),                                   # 7. Rotate 90° CCW + vertical flip
+        (lambda t: TF.vflip(torch.rot90(t, 1, [-2, -1])),                                    # 7. Rotate 90° CCW + vertical flip
          lambda t: torch.rot90(TF.vflip(t), -1, [-2, -1])),
-        (lambda t: TF.vflip(TF.hflip(torch.rot90(t, 1, [-2, -1]))),                         # 8. Rotate 90° CCW + horizontal + vertical flip
+        (lambda t: TF.vflip(TF.hflip(torch.rot90(t, 1, [-2, -1]))),                          # 8. Rotate 90° CCW + horizontal + vertical flip
          lambda t: torch.rot90(TF.hflip(TF.vflip(t)), -1, [-2, -1])),
     ]
 

@@ -13,7 +13,6 @@ class DehazeDataset(Dataset):
         self.crop_size = crop_size
 
         self.hazy_dir = os.path.join(root_dir, 'hazy')
-        # 兼容 gt 或 clear 文件夹命名
         if os.path.exists(os.path.join(root_dir, 'gt')):
             self.clear_dir = os.path.join(root_dir, 'gt')
         else:
@@ -32,7 +31,6 @@ class DehazeDataset(Dataset):
         return [f for f in os.listdir(dir_path) if os.path.splitext(f)[1].lower() in valid_extensions]
 
     def _augment(self, hazy, clear):
-        # 随机裁剪
         w, h = hazy.size
         if w > self.crop_size and h > self.crop_size:
             i, j, h_crop, w_crop = tfs.RandomCrop.get_params(
@@ -42,8 +40,6 @@ class DehazeDataset(Dataset):
         else:
             hazy = TF.resize(hazy, (self.crop_size, self.crop_size))
             clear = TF.resize(clear, (self.crop_size, self.crop_size))
-
-        # 随机翻转
         if random.random() > 0.5:
             hazy = TF.hflip(hazy)
             clear = TF.hflip(clear)
@@ -51,8 +47,6 @@ class DehazeDataset(Dataset):
         if random.random() > 0.5:
             hazy = TF.vflip(hazy)
             clear = TF.vflip(clear)
-
-        # 随机旋转
         rotations = [0, 90, 180, 270]
         angle = random.choice(rotations)
         if angle > 0:
@@ -62,9 +56,7 @@ class DehazeDataset(Dataset):
         return hazy, clear
 
     def _add_night_noise(self, tensor):
-        # 仅在训练时添加极微量的噪声，防止过拟合，但不破坏暗部细节
         if random.random() > 0.5:
-            # 【关键修改】大幅降低噪声水平 (0.05 -> 0.005)
             noise_level = random.uniform(0, 0.005)
             noise = torch.randn_like(tensor) * noise_level
             tensor = tensor + noise
@@ -82,7 +74,6 @@ class DehazeDataset(Dataset):
             hazy_img, clear_img = self._augment(hazy_img, clear_img)
             hazy_tensor = TF.to_tensor(hazy_img)
             clear_tensor = TF.to_tensor(clear_img)
-            # 添加微量噪声
             hazy_tensor = self._add_night_noise(hazy_tensor)
         else:
             hazy_img = TF.resize(hazy_img, (self.crop_size, self.crop_size))

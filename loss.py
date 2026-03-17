@@ -70,10 +70,8 @@ class ColorCosineLoss(nn.Module):
         super(ColorCosineLoss, self).__init__()
 
     def forward(self, pred, target):
-        # 沿着通道维度(dim=1)进行 L2 归一化
         pred_norm = F.normalize(pred, p=2, dim=1)
         target_norm = F.normalize(target, p=2, dim=1)
-        # 计算余弦相似度，并求误差
         cosine_sim = torch.sum(pred_norm * target_norm, dim=1)
         return torch.mean(1.0 - cosine_sim)
 
