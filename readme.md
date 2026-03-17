@@ -3,10 +3,17 @@
 Overview
 --------
 TripleSpaceDehazeNet is JNU620 submission for NTIRE2026-Nighttime Image Dehazing Challenge. 
-
+We propose TripleSpaceDehazeNet, a nighttime image dehazing network built on two complementary design principles.
+First, inspired by SGDN~\cite{sgdn}, we extend the dual color-space guidance strategy from RGB+YCbCr to a triple-space representation that additionally incorporates the CIE Lab color space.
+Second, motivated by the multi-prior guidance framework in ClearNight~\cite{clearnight}, we introduce a joint physical prior map that simultaneously encodes dark channel statistics, image gradient structure, illumination distribution, and local smoothness—four cues that together capture the heterogeneous nature of nighttime haze.
 Repository layout
 -----------------
-data
+- `data/` -The 'data' folder is used to store dataset images.
+- `results` -The 'results' folder is used to store the final images submitted for the competition.
+- `weights/` -The 'weight' folder stores the model weights obtained from the final training of the competition, used to quickly reproduce the final submission results by running the infer.py inference script.
+- `checkpoints/` -The checkpoints folder is used to store the weights produced by model training.
+- `train_results/` -The train_results folder is used to store the visual dehazed images generated during the model training process.
+
 
 Pretrained weights
 ------------------
