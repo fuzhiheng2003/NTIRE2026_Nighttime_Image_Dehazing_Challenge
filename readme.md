@@ -2,6 +2,7 @@
 #  TeamName: JNU620
 Overview
 --------
+
 TripleSpaceDehazeNet is JNU620 submission for NTIRE2026-Nighttime Image Dehazing Challenge. 
 We propose TripleSpaceDehazeNet, a nighttime image dehazing network built on two complementary design principles.
 First, inspired by SGDN~\cite{sgdn}, we extend the dual color-space guidance strategy from RGB+YCbCr to a triple-space representation that additionally incorporates the CIE Lab color space.
